@@ -1,0 +1,786 @@
+---------------------------------------------------
+1. REMOTE PROCEDURE CALL (RPC)
+---------------------------------------------------
+struct numbers{
+  int a;
+  int b;
+};
+
+program ADD_PROG{
+  version ADD_VERS{
+    int add(numbers)=1;
+  }=1;
+}=0x4562877;
+
+----------------------------------------------------
+add_server.c
+
+printf("add(%d,%d) is called\n",argp->a,argp-b);
+result=agrpa->a+argp->b;
+----------------------------------------------------
+add_client.c
+
+void add_prog_1(char *host, int x, int y
+
+add_1_arg.a = x;
+add_1_arg.b = y;
+
+} else {
+        printf("Result: %d\n", *result_1);
+}
+
+ if (argc < 4) {
+        printf("Usage: %s server_host num1 num2\n", argv[0]);
+        exit (1);
+ }
+ add_prog_1(argv[1], atoi(argv[2]), atoi(argv[3]));
+ exit (0);
+---------------------------------------------------
+rpcinfo
+
+rpcgen  -a  -C add.x
+
+make  -f  Makefile.add
+
+To start server --> :-$ sudo ./add_server 
+
+To start client --> :-$ sudo ./add_client localhost 5 8
+
+--------------------------------------------------------------------
+=====================================
+--------------------------------------------------------------------
+			2. ELECTION  ALGORITHM
+---------------------------------------------------------------------
+===================================== 
+--------------------------------------------------------------------- 
+			      2.1 BULLY ALGORITHM
+--------------------------------------------------------------------- 
+#include <stdio.h>
+#include <stdbool.h>
+#define MAX_NODES 10
+typedef struct
+{
+    int id;
+    bool is_active;
+} Node;
+int bully_algorithm(Node nodes[], int n, int initiator_id, int *message_count)
+{
+    int coordinator_id = -1;
+    *message_count = 0;
+    printf("\nNode %d starts the election.\n",initiator_id);
+    for (int i = 0; i < n; i++)
+    {
+        if (nodes[i].is_active && nodes[i].id >initiator_id)
+        {
+            printf("Node %d sends election message to Node %d.\n", initiator_id, nodes[i].id); 
+            (*message_count)++;
+        }
+    }
+    for (int i = 0; i < n; i++)
+    {
+        if (nodes[i].is_active && nodes[i].id >coordinator_id)
+        {
+            coordinator_id = nodes[i].id;
+        }
+    }
+printf("Node %d is elected as the new 
+coordinator.\n", coordinator_id); 
+return coordinator_id;
+}
+int main()
+{
+    Node nodes[MAX_NODES] = {
+        {1, true}, {2, true}, {3, true}, {4, true}, {5, false}, {6, true}, {7, true}, {8, true}, {9, true}, {10, false}};
+    int n = 10;
+    int message_count, coordinator_id;
+    printf("\n--- Best Case ---");
+    coordinator_id = bully_algorithm(nodes, n, 9,&message_count);
+    printf("Messages exchanged: %d\n",message_count);
+    printf("\n--- Average Case ---");
+    coordinator_id = bully_algorithm(nodes, n, 5,&message_count);
+    printf("Messages exchanged: %d\n",message_count);
+    printf("\n--- Worst Case ---");
+    coordinator_id = bully_algorithm(nodes, n, 1,&message_count);
+    printf("Messages exchanged: %d\n",message_count);
+    return 0;
+}
+=====================================
+--------------------------------------------------------------------- 
+			      2.2 RING ALGORITHM
+---------------------------------------------------------------------
+===================================== 
+
+#include <stdio.h>
+#include <stdbool.h>
+#define MAX_NODES 10
+typedef struct
+{
+    int id;
+    bool is_active;
+} Node;
+int ring_algorithm(Node nodes[], int n, int initiator_index, int *message_count)
+{
+    int coordinator_id = -1;
+    int current_index = initiator_index;
+    *message_count = 0;
+    printf("\nNode %d starts the election.\n",nodes[initiator_index].id);
+    do
+    {
+        int next_index = (current_index + 1) % n;
+        if (nodes[next_index].is_active)
+        {
+            printf("Node %d passes its ID (%d) to Node %d.\n ", nodes[current_index].id, nodes[current_index].id,nodes[next_index].id);
+            (*message_count)++;
+            if (nodes[next_index].id >coordinator_id)
+            {
+                coordinator_id =nodes[next_index].id;
+            }
+        }
+        current_index = next_index;
+    } while (current_index != initiator_index);
+printf("Node %d is elected as the new 
+coordinator.\n", coordinator_id); 
+return coordinator_id;
+}
+int main()
+{
+    Node nodes[MAX_NODES] = {{1, true}, {2, true}, {3, true}, {4, false}, {5, true}, {6, true}, {7, true}, {8, true}, {9, true}, {10, false}};
+    int n = 10;
+    int message_count, coordinator_id;
+    printf("\n--- Best Case ---");
+    coordinator_id = ring_algorithm(nodes, n, 8,&message_count);
+    printf("Messages exchanged: %d\n",message_count);
+    printf("\n--- Average Case ---");
+    coordinator_id = ring_algorithm(nodes, n, 5,&message_count);
+    printf("Messages exchanged: %d\n",message_count);
+    printf("\n--- Worst Case ---");
+    coordinator_id = ring_algorithm(nodes, n, 0,&message_count); // Node 1 initiates
+    printf("Messages exchanged: %d\n",message_count);
+    return 0;
+}
+
+=============================================
+------------------------------------------------------------------------------------
+				DEADLOCK ALGORITHMS
+------------------------------------------------------------------------------------
+=============================================
+------------------------------------------------------------------------------------
+				1. CENTRALIZED APPROACH:
+------------------------------------------------------------------------------------
+=============================================
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#define MAX_PROCESSES 10
+int waitForGraph[MAX_PROCESSES][MAX_PROCESSES];
+int visited[MAX_PROCESSES];
+bool dfs(int node, int numProcesses)
+{
+    if (visited[node] == 1)
+        return true;
+    if (visited[node] == 2)
+        return false;
+    visited[node] = 1;
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (waitForGraph[node][i] == 1)
+        {
+            if (dfs(i, numProcesses))
+                return true;
+        }
+    }
+    visited[node] = 2;
+    return false;
+}
+bool detectDeadlock(int numProcesses)
+{
+    for (int i = 0; i < numProcesses; i++)
+    {
+        visited[i] = 0;
+    }
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (visited[i] == 0)
+        {
+            if (dfs(i, numProcesses))
+                return true;
+        }
+    }
+    return false;
+}
+int main()
+{
+    int numProcesses;
+    printf("Enter the number of processes: ");
+    scanf("%d", &numProcesses);
+    printf("Enter the Wait-For Graph as an 
+    adjacency matrix:\n"); 
+    for (int i = 0; i < numProcesses; i++) {
+            for (int j = 0; j < numProcesses; j++)
+            {
+                scanf("%d", &waitForGraph[i][j]);
+            } 
+    } 
+    if (detectDeadlock(numProcesses)) {
+            printf("Deadlock detected!\n"); 
+    } else {
+            printf("No deadlock detected.\n"); 
+    } 
+    return 0;
+}
+=============================================
+------------------------------------------------------------------------------------
+				2.HIERARCHICAL APPRAOCH :
+------------------------------------------------------------------------------------
+=============================================
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#define MAX_PROCESSES 10
+int regionGraphs[2][MAX_PROCESSES][MAX_PROCESSES];
+int globalGraph[MAX_PROCESSES][MAX_PROCESSES];
+int visited[MAX_PROCESSES];
+bool dfs(int node, int numProcesses)
+{
+    if (visited[node] == 1)
+        return true;
+    if (visited[node] == 2)
+        return false;
+    visited[node] = 1;
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (globalGraph[node][i] == 1)
+        {
+            if (dfs(i, numProcesses))
+                return true;
+        }
+    }
+    visited[node] = 2;
+    return false;
+}
+bool detectDeadlockInRegion(int region, int numProcesses)
+{
+    for (int i = 0; i < numProcesses; i++)
+    {
+        for (int j = 0; j < numProcesses; j++)
+        {
+            globalGraph[i][j] = regionGraphs[region][i][j];
+        }
+    }
+    return dfs(0, numProcesses);
+}
+bool detectGlobalDeadlock(int numProcesses)
+{
+    for (int i = 0; i < numProcesses; i++)
+    {
+        for (int j = 0; j < numProcesses; j++)
+        {
+            globalGraph[i][j] = regionGraphs[0][i][j] || regionGraphs[1][i][j];
+        }
+    }
+    return dfs(0, numProcesses);
+}
+int main()
+{
+    int numProcesses;
+    printf("Enter the number of processes: ");
+    scanf("%d", &numProcesses);
+    for (int region = 0; region < 2; region++)
+    {
+        printf("Enter the Wait-For Graph for Region %d:\n", region + 1); 
+        for (int i = 0; i < numProcesses; i++) 
+        {
+            for (int j = 0; j < numProcesses;j++)
+            {
+                scanf("%d", &regionGraphs[region][i][j]);
+            } 
+        }
+    }
+    bool region1Deadlock =detectDeadlockInRegion(0, numProcesses);
+    bool region2Deadlock =detectDeadlockInRegion(1, numProcesses);
+    bool globalDeadlock =detectGlobalDeadlock(numProcesses);
+    if (region1Deadlock || region2Deadlock ||globalDeadlock)
+    {
+        printf("Deadlock detected!\n");
+    }
+    else
+    {
+        printf("No deadlock detected.\n");
+    }
+    return 0;
+}
+
+=============================================
+------------------------------------------------------------------------------------
+				3.WFG DISTRIBUTED APPRAOCH :
+------------------------------------------------------------------------------------
+=============================================
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#define MAX_PROCESSES 10
+#define MAX_NODES 10
+int localWFG[MAX_NODES][MAX_PROCESSES][MAX_PROCESSES];
+int globalWFG[MAX_PROCESSES][MAX_PROCESSES];
+int visited[MAX_PROCESSES];
+bool dfs(int node, int numProcesses)
+{
+    if (visited[node] == 1)
+        return true;
+    if (visited[node] == 2)
+        return false;
+    visited[node] = 1;
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (globalWFG[node][i] == 1)
+        {
+            if (dfs(i, numProcesses))
+                return true;
+        }
+    }
+    visited[node] = 2;
+    return false;
+}
+void constructGlobalWFG(int numNodes, int numProcesses)
+{
+    for (int i = 0; i < numProcesses; i++)
+    {
+        for (int j = 0; j < numProcesses; j++)
+        {
+            globalWFG[i][j] = 0;
+        }
+    }
+    for (int node = 0; node < numNodes;node++)
+    {
+        for (int i = 0; i < numProcesses; i++)
+        {
+            for (int j = 0; j < numProcesses; j++)
+            {
+                globalWFG[i][j] |= localWFG[node][i][j];
+            }
+        }
+    }
+}
+bool detectDeadlock(int numNodes, int numProcesses)
+{
+    constructGlobalWFG(numNodes,numProcesses);
+    for (int i = 0; i < numProcesses; i++)
+    {
+        visited[i] = 0;
+    }
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (visited[i] == 0)
+        {
+            if (dfs(i, numProcesses))
+                return true;
+        }
+    }
+    return false;
+}
+int main()
+{
+    int numNodes, numProcesses;
+    printf("Enter the number of nodes: ");
+    scanf("%d", &numNodes);
+    printf("Enter the number of processes per node: "); 
+    scanf("%d", &numProcesses); 
+    for (int node = 0; node < numNodes; node++) 
+    {
+        printf("Enter the Local Wait-For Graph 
+        for Node %d:\n", node + 1); 
+        for (int i = 0; i < numProcesses; i++) 
+        {
+            for (int j = 0; j < numProcesses;j++)
+            {
+                scanf("%d",&localWFG[node][i][j]);
+            } 
+        } 
+    } 
+    if (detectDeadlock(numNodes, numProcesses)) 
+    {
+        printf("Deadlock detected!\n"); 
+    } else {
+        printf("No deadlock detected.\n"); 
+    } 
+    return 0;
+}
+
+=============================================
+------------------------------------------------------------------------------------
+			4. PROBE BASED DISTRIBUTED APPRAOCH :
+------------------------------------------------------------------------------------
+=============================================
+
+#include <stdio.h>
+#include <stdbool.h>
+#define MAX_PROCESSES 10
+int waitForGraph[MAX_PROCESSES][MAX_PROCESSES];
+bool visited[MAX_PROCESSES];
+bool sendProbe(int initiator, int current, int numProcesses)
+{
+    if (current == initiator && visited[current])
+    {
+        return true; // Cycle detected
+    }
+    visited[current] = true;
+    for (int i = 0; i < numProcesses; i++)
+    {
+        if (waitForGraph[current][i] == 1)
+        {
+            // Check dependency
+            if (!visited[i])
+            {
+                if (sendProbe(initiator, i,numProcesses))
+                {
+                    return true;
+                }
+            }
+            else if (i == initiator)
+            {
+                return true; // Cycle detected
+                when returning to the initiator
+            }
+        }
+    }
+    return false;
+}
+bool detectDeadlock(int numProcesses)
+{
+    for (int i = 0; i < numProcesses; i++)
+    {
+        for (int j = 0; j < numProcesses; j++)
+        {
+            visited[j] = false; // Resetvisited array for each initiator
+        }
+        if (sendProbe(i, i, numProcesses))
+        {
+            return true; // Deadlock detected
+        }
+    }
+    return false; // No deadlock detected
+}
+int main()
+{
+    int numProcesses;
+    printf("Enter the number of processes: ");
+    scanf("%d", &numProcesses);
+    printf("Enter the Wait-For Graph as an adjacency matrix:\n"); 
+    for (int i = 0; i < numProcesses; i++) 
+    {
+        for (int j = 0; j < numProcesses; j++)
+        {
+            scanf("%d", &waitForGraph[i][j]);
+        } 
+    } 
+    if (detectDeadlock(numProcesses)) {
+        printf("Deadlock detected!\n"); 
+    } else {
+        printf("No deadlock detected.\n"); 
+    } 
+    return 0;
+}
+=============================================
+------------------------------------------------------------------------------------
+				4. MESSAGE PASSING INTERFACE
+------------------------------------------------------------------------------------
+=============================================
+------------------------------------------------------------------------------------
+				4.1 BROADCAST COMMUNICATION
+------------------------------------------------------------------------------------
+=============================================
+------------------------------------------------------------------------------------
+				4.1.1 MATRIX ADDITION
+------------------------------------------------------------------------------------
+=============================================
+
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define N 4  // Matrix size
+
+void multiply_row(int row[], int B[N][N], int result[], int n) {
+    for (int j = 0; j < n; j++) {
+        result[j] = 0;
+        for (int k = 0; k < n; k++) {
+            result[j] += row[k] * B[k][j];
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    int rank, size;
+    int A[N][N], B[N][N], C[N][N];
+    
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (N % size != 0) {
+        if (rank == 0) {
+            printf("Error: Number of processes must evenly divide N (%d).\n", N);
+        }
+        MPI_Finalize();
+        exit(1);
+    }
+
+    int rows_per_proc = N / size;
+    int sub_A[rows_per_proc][N], sub_C[rows_per_proc][N];
+
+    if (rank == 0) {
+        printf("Enter elements for matrix A (%dx%d):\n", N, N);
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                scanf("%d", &A[i][j]);
+
+        printf("Enter elements for matrix B (%dx%d):\n", N, N);
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                scanf("%d", &B[i][j]);
+    }
+
+    // Broadcast matrix B to all processes
+    MPI_Bcast(B, N * N, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Scatter rows of A among processes
+    MPI_Scatter(A, rows_per_proc * N, MPI_INT, sub_A, rows_per_proc * N, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Each process computes its part of C
+    for (int i = 0; i < rows_per_proc; i++) {
+        multiply_row(sub_A[i], B, sub_C[i], N);
+    }
+
+    // Gather the result matrix C
+    MPI_Gather(sub_C, rows_per_proc * N, MPI_INT, C, rows_per_proc * N, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("\nResult Matrix (Broadcast & Gather):\n");
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                printf("%d ", C[i][j]);
+            }
+            printf("\n");
+        }
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+=============================================
+
+mpicc matrix_broadcast.c -o matrix_broadcast
+
+mpirun -np 4 ./matrix_broadcast
+=============================================
+------------------------------------------------------------------------------------
+				4.1.2 PI CALCULATION
+------------------------------------------------------------------------------------
+=============================================
+
+#include <mpi.h> 
+#include <stdio.h> 
+double f(double x) { 
+    return 4.0 / (1.0 + x * x); 
+} 
+int main(int argc, char *argv[]) { 
+    int rank, size, n = 1000000; 
+    double h, local_sum = 0.0, global_sum = 0.0; 
+    MPI_Init(&argc, &argv); 
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+    MPI_Comm_size(MPI_COMM_WORLD, &size); 
+    h = 1.0 / n; 
+    for (int i = rank; i < n; i += size) { 
+        double x = h * (i + 0.5); 
+        local_sum += f(x); 
+    } 
+    local_sum *= h; 
+    MPI_Reduce(&local_sum, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, 
+MPI_COMM_WORLD); 
+    if (rank == 0) { 
+        printf("Estimated Pi: %lf\n", global_sum); 
+    } 
+    MPI_Finalize(); 
+    return 0; 
+}
+=============================================
+
+mpicc matrix_broadcast.c -o matrix_broadcast
+
+mpirun -np 4 ./matrix_broadcast
+=============================================
+
+=============================================
+------------------------------------------------------------------------------------
+			4.2 POINT TO POINT COMMUNICATION
+------------------------------------------------------------------------------------
+=============================================
+=============================================
+------------------------------------------------------------------------------------
+				4.2.1 MATRIX ADDITION
+------------------------------------------------------------------------------------
+=============================================
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define N 4
+void multiply_row(int row[], int B[N][N], int result[])
+{
+    for (int j = 0; j < N; j++)
+    {
+        result[j] = 0;
+        for (int k = 0; k < N; k++)
+        {
+            result[j] += row[k] * B[k][j];
+        }
+    }
+}
+int main(int argc, char *argv[])
+{
+    int rank, size;
+    int A[N][N], B[N][N], C[N][N];
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (N % size != 0)
+    {
+        if (rank == 0)
+        {
+            printf("Error: Number of processes must evenly divide N (%d).\n",N);
+        }
+        MPI_Finalize();
+        exit(1);
+    }
+    int rows_per_proc = N / size;
+    int sub_A[rows_per_proc][N], sub_C[rows_per_proc][N];
+    if (rank == 0)
+    {
+        printf("Enter elements for matrix A (%dx%d):\n", N, N);
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                scanf("%d", &A[i][j]);
+            }
+        }
+        printf("Enter elements for matrix B (%dx%d):\n", N, N);
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                scanf("%d", &B[i][j]);
+            }
+        }
+        for (int i = 1; i < size; i++)
+        {
+            MPI_Send(&A[i * rows_per_proc], rows_per_proc * N, MPI_INT, i, 0,MPI_COMM_WORLD);
+        }
+    }
+    else
+    {
+        MPI_Recv(sub_A, rows_per_proc * N, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    }
+    MPI_Bcast(B, N * N, MPI_INT, 0, MPI_COMM_WORLD);
+    for (int i = 0; i < rows_per_proc; i++)
+    {
+        multiply_row(sub_A[i], B, sub_C[i]);
+    }
+    if (rank == 0)
+    {
+        for (int i = 0; i < rows_per_proc; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                C[i][j] = sub_C[i][j];
+            }
+        }
+        for (int i = 1; i < size; i++)
+        {
+            MPI_Recv(&C[i * rows_per_proc], rows_per_proc * N, MPI_INT, i, 1,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+        printf("\nResult Matrix C (point-to-point):\n");
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                printf("%d ", C[i][j]);
+            }
+            printf("\n");
+        }
+    }
+    else
+    {
+        MPI_Send(sub_C, rows_per_proc * N, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    }
+    MPI_Finalize();
+    return 0;
+}
+=============================================
+
+mpicc matrix_broadcast.c -o matrix_broadcast
+
+mpirun -np 4 ./matrix_broadcast
+=============================================
+=============================================
+------------------------------------------------------------------------------------
+				4.2.2 PI CALCULATION
+------------------------------------------------------------------------------------
+=============================================
+
+
+#include <mpi.h>
+#include <stdio.h>
+double f(double x)
+{
+    return 4.0 / (1.0 + x * x);
+}
+int main(int argc, char *argv[])
+{
+    int rank, size, n = 1000000;
+    double h, local_sum = 0.0, global_sum = 0.0;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    h = 1.0 / n;
+    for (int i = rank; i < n; i += size)
+    {
+        double x = h * (i + 0.5);
+        local_sum += f(x);
+    }
+    local_sum *= h;
+    if (rank == 0)
+    {
+        global_sum = local_sum;
+        for (int i = 1; i < size; i++)
+        {
+            double temp_sum;
+            MPI_Recv(&temp_sum, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            global_sum += temp_sum;
+        }
+        MPI – Point to Point Communication 22z317 – Dhanushkumar M 06 / 03 / 2025
+
+            printf("Estimated Pi: %lf\n", global_sum);
+    }
+    else
+    {
+        MPI_Send(&local_sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    }
+    MPI_Finalize();
+    return 0;
+}
+
+=============================================
+
+mpicc matrix_broadcast.c -o matrix_broadcast
+
+mpirun -np 4 ./matrix_broadcast
+=============================================
+
+
+
+
+
+
+
