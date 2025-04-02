@@ -1,0 +1,194 @@
+==============================================
+1) Remote Procedure Call (RPC) Addition Algorithm
+Algorithm for RPC-Based Addition
+===============================================
+Define an RPC interface using an IDL (Interface Definition Language) file.
+
+Implement the server-side function that performs the addition.
+
+Implement the client-side program that calls the RPC function remotely.
+
+Generate the stubs using an RPC compiler (rpcgen).
+
+Compile and execute the server and client separately.
+
+The client sends two numbers to the server.
+
+The server processes the addition request and returns the sum.
+
+The client receives and displays the result.
+==============================================
+2) Deadlock Algorithms
+==============================================
+2.1) Centralized Approach
+==============================================
+A single coordinator process maintains the resource allocation graph (RAG).
+
+When a process requests a resource, the coordinator updates the RAG.
+
+The coordinator periodically checks for cycles in the graph.
+
+If a cycle is detected, it selects a process to terminate (usually the least costly).
+
+If no cycle is found, resources are allocated normally.
+==============================================
+2.2) Hierarchical Approach
+==============================================
+The system is divided into multiple levels (hierarchical structure).
+
+Each level has a local coordinator managing deadlocks for its subset of processes.
+
+If a local coordinator fails to resolve a deadlock, it escalates to the higher-level coordinator.
+
+The top-most coordinator has global control to break deadlocks.
+
+Processes are aborted or resources are preempted based on predefined policies.
+
+==============================================
+2.3) Wait-For Graph (WFG) Based Approach
+==============================================
+
+Construct a Wait-for Graph (WFG) where each process is a node.
+
+If process P1 waits for P2, draw an edge P1 → P2.
+
+The system periodically checks for cycles in the graph.
+
+If a cycle exists, a deadlock is detected.
+
+One of the processes in the cycle is terminated to break the deadlock.
+==============================================
+2.4) Probe-Based Approach
+==============================================
+
+Each process maintains a request set for the resources it needs.
+
+When a process requests a resource, it sends a probe to the resource owner.
+
+If the owner also needs resources, it forwards the probe.
+
+If the probe returns to the originating process, a deadlock is detected.
+
+The system terminates one process to resolve the deadlock.
+==============================================
+==============================================
+3) Election Algorithms
+==============================================
+==============================================
+3.1) Ring Algorithm
+==============================================
+
+All processes are arranged in a logical ring.
+
+Any process detecting a failure of the coordinator starts the election.
+
+It sends a message to the next process in the ring, proposing itself as the coordinator.
+
+The process receiving the message forwards it if it has a higher ID; otherwise, it replaces the sender's ID with its own.
+
+This continues until the message returns to the initiator with the highest ID.
+
+The process with the highest ID becomes the new coordinator and announces itself.
+
+==============================================
+3.2) Bully Algorithm
+==============================================
+
+A process detects the failure of the coordinator.
+
+It sends an ELECTION message to all higher-ID processes.
+
+If no higher process responds, it declares itself as the new coordinator.
+
+If a higher process responds, it starts its own election process.
+
+This continues until the process with the highest ID becomes the coordinator.
+
+The new coordinator sends a COORDINATOR message to all processes.
+==============================================
+==============================================
+4) Message Passing Interface (MPI) Algorithms
+==============================================
+==============================================
+4.1) Point-to-Point Matrix Multiplication
+==============================================
+The master process partitions the matrices into smaller submatrices.
+
+The submatrices are sent to worker processes using MPI_Send().
+
+Each worker computes its assigned part of the matrix multiplication.
+
+The results are sent back to the master using MPI_Recv().
+
+The master process gathers the results and assembles the final matrix.
+==============================================
+4.2) Point-to-Point Pi Calculation (Monte Carlo)
+==============================================
+The master process initializes variables and distributes workload.
+
+Each worker process:
+
+Generates random points inside a unit square.
+
+Counts points inside the unit circle.
+
+Sends the count back to the master.
+
+The master collects results from all workers.
+
+The approximation is computed as:
+
+𝜋
+≈
+4
+×
+total points inside circle
+total points generated
+π≈ 
+total points generated
+4×total points inside circle
+​
+ 
+The final value of π is printed.
+==============================================
+4.3) Broadcast Matrix Multiplication
+==============================================
+
+The master process broadcasts matrix A to all processes.
+
+Matrix B is distributed row-wise to different processes.
+
+Each process performs partial multiplication of its assigned portion.
+
+The partial results are sent back to the master using MPI_Gather().
+
+The master combines the results to obtain the final matrix.
+
+==============================================
+4.4) Broadcast Pi Calculation (Monte Carlo)
+==============================================
+
+The master process broadcasts the total number of points to all processes.
+
+Each process:
+
+Generates random points inside a unit square.
+
+Counts how many fall inside the unit circle.
+
+The counts are collected using MPI_Reduce().
+
+The approximation is computed as:
+
+𝜋
+≈
+4
+×
+total points inside circle
+total points generated
+π≈ 
+total points generated
+4×total points inside circle
+​
+ 
+The final π value is printed.
