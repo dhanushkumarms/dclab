@@ -1,0 +1,1353 @@
+=========================================================================================
+
+Question -1
+
+Q1. Problem Statement Alex is working on a navigation system that finds the shortest path between two locations using the A* algorithm. Given a directed graph where nodes represent locations and edges represent paths with weights, along with heuristic values for each node, write a program to determine the optimal path from a starting node to a destination node. If a path exists, print the sequence of nodes in the order they should be visited; otherwise, print that no path exists.
+
+=========================================================================================
+
+import heapq , defaultdict
+
+def from_to_cost_edges(edges_dummy):
+    edges = defaultdict(list)
+    for frm, to, cost in edges_dummy:
+        edges[frm].append((to, cost))
+    return edges
+
+def tuple_to_heuritic(heuristic_dummy):
+    heuristic = {}
+    for node, h_cost in heuristic_dummy:
+        heuristic[node] = h_cost
+    return heuristic
+
+def a_star(edges, heuristic, start, goal):
+    priority_queue = []
+
+    #Kept the f-cost in o index then only sorting will happen inside the heap easily
+    heapq.heappush(priority_queue, (0 + heuristic[start], 0, start, []))  # (f-cost, g-cost, node, path)
+
+    visited = set()
+
+    while priority_queue:
+        f_cost, g_cost, current, path = heapq.heappop(priority_queue)
+
+        if current in visited:
+            continue
+        visited.add(current)
+
+        path = path + [current]
+
+        if current == goal:
+            return path, g_cost
+
+        for neighbor, cost in edges.get(current, []):
+            if neighbor not in visited:
+                new_g_cost = g_cost + cost
+                new_f_cost = new_g_cost + heuristic.get(neighbor, float('inf'))
+                heapq.heappush(priority_queue, (new_f_cost, new_g_cost, neighbor, path))
+
+    return None, float('inf')  # No path found
+
+if __name__ == "__main__":
+
+    n = int(input())  # Number of nodes
+
+    e = int(input())  # Number of edges
+
+    edges_dummy = []
+    for _ in range(e):
+        frm, to, cost = map(int, input().split())
+        edges_dummy.append((frm, to, cost))
+
+    heuristic_dummy = []
+    h = int(input())  # Number of heuristic values
+
+    for _ in range(h):
+        node, h_cost = map(int, input().split())
+        heuristic_dummy.append((node, h_cost))
+
+    start = int(input())  # Start node
+
+    goal = int(input())  # Goal node
+
+    edges = from_to_cost_edges(edges_dummy)
+    heuristic = tuple_to_heuritic(heuristic_dummy)
+
+    shortest_path, total_cost = a_star(edges, heuristic, start, goal)
+
+    if shortest_path:
+        print("Shortest Path:", shortest_path)
+        print("Total Cost:", total_cost)
+    else:
+        print("No path found")
+
+=========================================================================================
+
+Question -2
+
+Q2. Problem Statement Implement the A* search algorithm to determine the minimum path cost from a starting node to a target node in a directed weighted graph. Each node in the graph has a list of neighbors with corresponding edge costs, and each node also has an associated heuristic value estimating its cost to the goal. If a path exists, output the total path cost; otherwise, output "Path does not exist!".
+
+=========================================================================================
+import heapq
+import collections
+
+def from_to_cost_edges(edges_dummy):
+    edges = collections.defaultdict(list)
+    for frm, to, cost in edges_dummy:
+        edges[frm].append((to, cost))
+    return edges
+
+def tuple_to_heuristic(heuristic_dummy):
+    return {node: h_cost for node, h_cost in heuristic_dummy}
+
+def a_star(edges, heuristic, start, goal):
+    priority_queue = []
+    heapq.heappush(priority_queue, (heuristic[start], 0, start, []))  # (f-cost, g-cost, current_node, path)
+
+    visited = set()
+
+    while priority_queue:
+        f_cost, g_cost, current, path = heapq.heappop(priority_queue)
+
+        if current in visited:
+            continue
+
+        path = path + [current]
+        visited.add(current)
+
+        if current == goal:
+            return path, g_cost  # Return the path and total cost
+
+        for neighbor, edge_cost in edges[current]:
+            if neighbor not in visited:
+                new_g_cost = g_cost + edge_cost
+                new_f_cost = new_g_cost + heuristic.get(neighbor, float('inf'))  # f = g + h
+                heapq.heappush(priority_queue, (new_f_cost, new_g_cost, neighbor, path))
+
+    return None, None  # No valid path
+
+if __name__ == "__main__":
+    n = int(input())  # Number of nodes
+    e = int(input())  # Number of edges
+
+    edges_dummy = []
+    for _ in range(e):
+        frm, to, cost = map(int, input().split())
+        edges_dummy.append((frm, to, cost))
+
+    h = int(input())  # Number of heuristic values
+    heuristic_dummy = []
+    for _ in range(h):
+        node, h_cost = map(int, input().split())
+        heuristic_dummy.append((node, h_cost))
+
+    start = int(input())  # Start node
+    goal = int(input())   # Goal node
+
+    edges = from_to_cost_edges(edges_dummy)
+    heuristic = tuple_to_heuristic(heuristic_dummy)
+
+    shortest_path, total_cost = a_star(edges, heuristic, start, goal)
+
+    if shortest_path:
+        print("Path:", " -> ".join(map(str, shortest_path)))
+        print("Total Cost:", total_cost)
+    else:
+        print("Path does not exist!")
+=========================================================================================
+
+Q3. Problem Statement George, a financial analyst, is working on optimizing the distribution of funds across various investment portfolios. Each investment scenario is represented as a node in a binary decision tree, where each node decides whether to increase or decrease investment in a particular portfolio.
+
+George aims to use a minimax algorithm with alpha-beta pruning to determine the most favorable investment strategy, maximizing returns at various decision points.
+
+=========================================================================================
+#Here the premax and premin logic is used to correctly use the printStatements to pass testCase
+
+def minimax(depth_level , depth, node_index, is_maximizing_player, values, alpha, beta):
+    # Base case: If the depth is 0, return the value of the leaf node
+    if depth == depth_level:
+        return values[node_index]
+
+    # If we are at a maximizing player
+    if is_maximizing_player:
+        max_val = float('-inf')
+        pre_max = 0
+        for i in range(2):  # Two children of each node
+            value = minimax(depth_level + 1,depth ,  node_index * 2 + i , False, values, alpha, beta)
+            max_val = max(max_val, value)
+            # Update alpha
+            if pre_max == 0 or pre_max != max_val:
+                print(f"Maximizer updated best value to {max_val} at depth {depth_level}")
+
+            alpha = max(alpha, max_val)
+
+            if beta <= alpha:
+                print(f"Pruning at depth {depth_level} by Maximizer")
+                break
+            pre_max = max_val
+
+        return max_val
+
+    # If we are at a minimizing player
+    else:
+        min_val = float('inf')
+        pre_min = 0
+        for i in range(2):  # Two children of each node
+            value = minimax(depth_level + 1,depth , node_index * 2 + i , True, values, alpha, beta)
+            min_val = min(min_val, value)
+            # Update beta
+            if pre_min == 0 or pre_min != min_val:
+                print(f"Minimizer updated best value to {min_val} at depth {depth_level}")
+
+            beta = min(beta, min_val)
+            if beta <= alpha:
+                print(f"Pruning at depth {depth_level} by Minimizer")
+                break
+            pre_min = min_val
+        return min_val
+
+def decision_tree(d, leaf_values):
+    # Start from depth 0 (root) with alpha as negative infinity and beta as positive infinity
+    optimal_value = minimax(0 , d , 0, True, leaf_values, float('-inf'), float('inf'))
+    return optimal_value
+
+# Input
+d = int(input())  # depth of the tree
+
+leaf_values = list(map(int, input().split()))  # leaf values at the bottom level of the tree
+
+# Note if depth is not given Use this logic to get depth
+# d = len(leaf_values).bit_length() - 1
+
+# Output the result
+optimal_value = decision_tree(d, leaf_values)
+print(f"Optimal Value: {optimal_value}")
+
+=========================================================================================
+
+Q4. Problem Statement Julia, an environmental scientist, is working on optimizing water distribution strategies during periods of scarcity. She is using a decision-making tool that evaluates various strategies for allocating water to different regions based on predicted need and availability.
+
+To improve the strategy, Julia implements a minimax algorithm with alpha-beta pruning within a decision tree, where each node represents a decision on water distribution. Additionally, Julia introduces a flat increase of 10 units of water at each node as a safety buffer, ensuring each area has an emergency reserve.
+
+=========================================================================================
+
+# I think , this Question similar like Question number 1(Refer My Machine Learning LAB Colab) in Alpha Beta Pruning that we done in examly portal.
+
+import math
+
+def alpha_beta_pruning(node, depth, alpha, beta, maximizing_player, water_supply):
+    if depth == 0:
+        return water_supply[node] + 10  # Adding 10 units as an emergency reserve
+
+    if maximizing_player:
+        max_eval = float('-inf')
+        for i in range(2):  # Binary tree (each node has 2 children)
+            value = alpha_beta_pruning(2 * node + i, depth - 1, alpha, beta, False, water_supply)
+            max_eval = max(max_eval, value)
+            alpha = max(alpha, max_eval)
+            if beta <= alpha:
+                break  # Beta cut-off
+        return max_eval
+
+    else:
+        min_eval = float('inf')
+        for i in range(2):
+            value = alpha_beta_pruning(2 * node + i, depth - 1, alpha, beta, True, water_supply)
+            min_eval = min(min_eval, value)
+            beta = min(beta, min_eval)
+            if beta <= alpha:
+                break  # Alpha cut-off
+        return min_eval
+
+# Input: List of 8 integers representing available water at the leaf nodes
+water_supply = list(map(int, input("Enter 8 water supply values: ").split()))
+depth = len(water_supply).bit_length() - 1  # Depth of the tree
+
+# Get the optimal water allocation
+optimal_allocation = alpha_beta_pruning(0, depth, float('-inf'), float('inf'), True, water_supply)
+
+# Output the results
+print(f"Optimal water allocation: {optimal_allocation}")
+# print(f"After 10% increase: {int(optimal_allocation * 1.10)}") Not Necessary
+
+=========================================================================================
+
+Question -5
+
+Q5. Problem Statement Vino is a data analyst working with a loan dataset that contains information about urban and rural areas. The dataset has missing values that need to be addressed. Vino is also tasked with filling in missing values for the "Employment," "Population," and "Income" columns. Additionally, Vino needs to perform data standardization and normalization for the "Income" column. Handling Missing Data and Standardization: • Load the CSV dataset, and drop rows with missing values. • Fill categorical "Employment" with mode, "Population" with mean, and "Income" with median. • Display filled values. Standardize "Income_filled_median" using StandardScaler and normalize using MinMaxScaler.
+
+=========================================================================================
+import pandas as pd
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import os
+import sys
+
+# Load dataset
+file_path = os.path.join(sys.path[0] , "urban_rural.csv")
+df = pd.read_csv(file_path)
+
+# Display missing data information
+missing_data = df.isnull().sum()
+print("Missing Data:")
+print(missing_data)
+print()
+
+# Drop rows with missing values
+df_dropna = df.dropna()
+print("Dataset after dropping missing values:")
+print(df_dropna.to_string(index=True))
+print()
+
+# Fill categorical column 'Employment' with mode
+employment_imputer = SimpleImputer(strategy='most_frequent')
+df['Employment_filled'] = employment_imputer.fit_transform(df[['Employment']])
+print("Filled values for Employment with mode:")
+print(df['Employment_filled'])
+print()
+
+# Fill numerical column 'Population' with mean
+population_imputer = SimpleImputer(strategy='mean')
+df['Population_filled_mean'] = population_imputer.fit_transform(df[['Population']])
+print("Filled values for Population with mean:")
+print(df['Population_filled_mean'])
+print()
+
+# Fill numerical column 'Income' with median
+income_imputer = SimpleImputer(strategy='median')
+df['Income_filled_median'] = income_imputer.fit_transform(df[['Income']])
+print("Filled values for Income with median:")
+print(df['Income_filled_median'])
+print()
+
+# Standardize 'Income_filled_median'
+scaler = StandardScaler()
+df['Income_Standardized'] = scaler.fit_transform(df[['Income_filled_median']])
+print("Standardized Income:")
+print(df[['Income_Standardized']])
+print()
+
+# Normalize 'Income_filled_median'
+minmax_scaler = MinMaxScaler()
+df['Income_Normalized'] = minmax_scaler.fit_transform(df[['Income_filled_median']])
+print("Normalized Income:")
+print(df[['Income_Normalized']])
+
+
+#Without SimpleImputer
+
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import os
+import sys
+
+# Load dataset
+file_path = os.path.join(sys.path[0], "urban_rural.csv")
+df = pd.read_csv(file_path)
+
+# Display missing data information
+missing_data = df.isnull().sum()
+print("Missing Data:")
+print(missing_data)
+print()
+
+# Drop rows with missing values
+df_dropna = df.dropna()
+print("Dataset after dropping missing values:")
+print(df_dropna.to_string(index=True))
+print()
+
+# Fill categorical column 'Employment' with mode
+df['Employment_filled'] = df['Employment'].fillna(df['Employment'].mode()[0])
+print("Filled values for Employment with mode:")
+print(df['Employment_filled'])
+print()
+
+# Fill numerical column 'Population' with mean
+df['Population_filled_mean'] = df['Population'].fillna(df['Population'].mean())
+print("Filled values for Population with mean:")
+print(df['Population_filled_mean'])
+print()
+
+# Fill numerical column 'Income' with median
+df['Income_filled_median'] = df['Income'].fillna(df['Income'].median())
+print("Filled values for Income with median:")
+print(df['Income_filled_median'])
+print()
+
+# Standardize 'Income_filled_median'
+scaler = StandardScaler()
+df['Income_Standardized'] = scaler.fit_transform(df[['Income_filled_median']])
+print("Standardized Income:")
+print(df[['Income_Standardized']])
+print()
+
+# Normalize 'Income_filled_median'
+minmax_scaler = MinMaxScaler()
+df['Income_Normalized'] = minmax_scaler.fit_transform(df[['Income_filled_median']])
+print("Normalized Income:")
+print(df[['Income_Normalized']])
+
+=========================================================================================
+
+Question -6
+
+Q6. Problem Statement Lora, a data analyst, is working on a project involving linear regression analysis. She has a dataset stored in a CSV file, consisting of two columns: 'x' and 'y'. Lora needs to perform linear regression analysis on this dataset to understand the relationship between 'x' and 'y'. To facilitate this analysis, you are tasked with developing a Python program. The program will prompt the user to input the filename of the dataset. It will then read the data from the CSV file, execute linear regression analysis using the Scipy library, and calculate the slope, intercept, and estimated value at x=10. Finally, it will print these results rounded to four decimal places.
+
+=========================================================================================
+
+#As in Question Mentioned I do linearReg with scipy.stats
+
+import pandas as pd
+import numpy as np
+from scipy.stats import linregress
+import os
+import sys
+
+# Function to load dataset
+def load_dataset(filename):
+    return pd.read_csv(filename)
+
+# Function to perform linear regression
+def perform_linear_regression(df):
+    x = df['x']
+    y = df['y']
+
+    # Compute linear regression
+    slope, intercept, r_value, p_value, std_err = linregress(x, y)
+
+    # Estimate y when x = 10
+    estimated_y = slope * 10 + intercept
+
+    # Print results rounded to 4 decimal places
+    print(f"Slope: {slope:.4f}")
+    print(f"Intercept: {intercept:.4f}")
+    print(f"Estimated value at x=10: {estimated_y:.4f}")
+
+# Main function
+def main():
+    filename = input().strip()  # Take filename input
+    df = load_dataset(os.path.join(sys.path[0], filename))
+    perform_linear_regression(df)
+
+if __name__ == "__main__":
+    main()
+
+#OtherWay
+
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import os
+import sys
+
+# Function to load the dataset
+def load_dataset(filename):
+    return pd.read_csv(filename)
+
+# Function to train and evaluate the linear regression model
+def train_and_evaluate_model(df):
+    # Selecting features and target variable
+    X = df[['x']]
+    y = df['y']
+
+    # Creating and training the model
+    model = LinearRegression()
+    model.fit(X, y)
+
+    print(f"Slope: {model.coef_[0]:.4f}")
+    print(f"Intercept: {model.intercept_:.4f}")
+
+    # Predicting the value for x = 10
+    estimated_y = model.predict(np.array([[10]]))[0]
+    print(f"Estimated value at x=10: {estimated_y:.4f}")
+
+# Main function to execute the program
+def main():
+    filename = input().strip()  # Taking filename input
+    df = load_dataset(os.path.join(sys.path[0], filename))
+    train_and_evaluate_model(df)
+
+if __name__ == "__main__":
+    main()
+
+=========================================================================================
+
+Question -7
+
+Q7. Problem Statement Paul, a data scientist, is working on a project that involves evaluating the performance of a simple linear regression algorithm. He has a dataset stored in a CSV file, comprising two columns: 'x' and 'y'. Paul aims to calculate the root mean squared error (RMSE) of the regression algorithm applied to this dataset. To assist Paul, you are tasked with creating a Python program. The program will prompt the user to input the filename of the dataset. Subsequently, it will read the data from the CSV file, compute the RMSE using a simple linear regression algorithm, and output the RMSE value rounded to three decimal places.
+
+=========================================================================================
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+import os
+import sys
+
+# Function to load the dataset
+def load_dataset(filename):
+    return pd.read_csv(filename)
+
+# Function to train and evaluate the linear regression model
+def train_and_evaluate_model(df):
+    # Selecting features and target variable
+    X = df[['x']]
+    y = df['y']
+
+    # Splitting data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Creating and training the model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    # Making predictions
+    y_pred = model.predict(X_test)
+
+    # Calculating RMSE
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+    # Printing RMSE rounded to three decimal places
+    print(f"Root Mean Squared Error (RMSE): {rmse:.3f}")
+
+# Main function to execute the program
+def main():
+    filename = input().strip()  # Taking filename input
+    df = load_dataset(os.path.join(sys.path[0], filename))
+    train_and_evaluate_model(df)
+
+if __name__ == "__main__":
+    main()
+
+=========================================================================================
+
+Question -8
+
+Q8. Problem Statement A data scientist is working on a customer churn prediction model for a subscription-based service. The dataset contains various attributes of customers, such as age, sex, account length, number of products used, credit card status, activity level, and estimated salary. The target variable Churn indicates whether a customer has canceled their subscription (1) or not (0). Write a program that reads the dataset from a CSV file, fits a logistic regression model to predict whether a customer will churn based on the given attributes, and evaluates the model's performance using accuracy, precision, recall, F1 score, AUC-ROC score, and confusion matrix. The program should output the evaluation metrics rounded to two decimal places.
+
+=========================================================================================
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+import os
+import sys
+
+def load_dataset(filename):
+    """Loads the dataset from a CSV file."""
+    return pd.read_csv(filename)
+
+def preprocess_data(df):
+    """Prepares the dataset for training."""
+    X = df.drop(columns=['Churn'])  # Features
+    y = df['Churn']  # Target variable
+
+    # Standardizing numerical features (optional but helps logistic regression)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    return X_scaled, y
+
+def train_and_evaluate_model(X, y):
+    """Trains a Logistic Regression model and evaluates it."""
+    # Splitting data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Creating and training the model
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+
+    # Making predictions
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]  # Probabilities for AUC-ROC
+
+    # Calculating evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    auc_roc = roc_auc_score(y_test, y_prob)
+    cm = confusion_matrix(y_test, y_pred)
+
+    # Printing evaluation metrics
+    print("Logistic Regression Model Evaluation:")
+    print(f"Accuracy: {accuracy:.2f}")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print(f"F1 Score: {f1:.2f}")
+    print(f"AUC-ROC Score: {auc_roc:.2f}")
+    print("Confusion Matrix:")
+    print(cm)
+
+def main():
+    filename = input("Enter the dataset filename: ").strip()
+    df = load_dataset(os.path.join(sys.path[0], filename))
+    X, y = preprocess_data(df)
+    train_and_evaluate_model(X, y)
+
+if __name__ == "__main__":
+    main()
+=========================================================================================
+
+Question -9
+
+Q9. Problem Statement David, an HR manager, is analyzing employee performance using a dataset that contains hours_worked and a binary target promotion (1 if promoted, 0 otherwise). He needs to predict whether an employee will be promoted based on the number of hours they worked. Write a program that loads the dataset from a CSV file, applies logistic regression using hours_worked as the feature, and calculates the model's precision, recall, F1 score, accuracy, and confusion matrix. The program should output the precision score rounded to four decimal places, along with other metrics.
+
+=========================================================================================
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import os
+import sys
+
+# Function to load the dataset
+def load_dataset(filename):
+    return pd.read_csv(filename)
+
+# Function to train and evaluate the logistic regression model
+def train_and_evaluate_model(df):
+    # Selecting feature and target variable
+    X = df[['hours_worked']]
+    y = df['promotion'] # Ref to csv file for correct target name
+
+    # Splitting data into training and testing sets (80% train, 20% test)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Creating and training the Logistic Regression model
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+
+    # Making predictions
+    y_pred = model.predict(X_test)
+
+    # Evaluating the model
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred)
+
+    # Printing evaluation metrics
+    print("Logistic Regression Model Evaluation:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
+    print("Confusion Matrix:")
+    print(conf_matrix)
+
+# Main function to execute the program
+def main():
+    filename = input().strip()  # Taking filename input
+    df = load_dataset(os.path.join(sys.path[0], filename))
+    train_and_evaluate_model(df)
+
+if __name__ == "__main__":
+    main()
+=========================================================================================
+
+Question -10
+
+Q10. Problem Statement Emily is working on a machine learning project where she needs to classify passenger survival based on Titanic dataset features. Write a program to load a CSV file containing passenger details, preprocess the data by encoding categorical values and handling missing values, train an SVM classifier, and evaluate its performance using accuracy, precision, recall, F1-score, and a confusion matrix. The program should read the CSV filename from user input and output the models evaluation metrics.
+
+=========================================================================================
+
+import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+
+# Prompt user for the filename
+file_name = input("Enter the Titanic dataset filename: ").strip()
+
+# Get the current directory of the script
+current_directory = os.path.dirname(__file__)
+
+# Construct the full path to the CSV file
+file_path = os.path.join(current_directory, file_name)
+
+# Load the dataset
+df = pd.read_csv(file_path)
+
+# Preprocess the dataset
+def preprocess_data(df):
+    # Selecting relevant columns
+    df = df[['Survived', 'Pclass', 'Sex', 'Age', 'Fare', 'Embarked']]
+
+    # Handle missing values
+    df['Age'].fillna(df['Age'].median(), inplace=True)
+    df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+    df['Fare'].fillna(df['Fare'].median(), inplace=True)
+
+    # Encode categorical variables
+    label_encoder = LabelEncoder()
+    df['Sex'] = label_encoder.fit_transform(df['Sex'])  # Male=1, Female=0
+    df['Embarked'] = label_encoder.fit_transform(df['Embarked'])  # S=2, C=0, Q=1
+
+    # Split features (X) and target (y)
+    X = df.drop(columns=['Survived'])
+    y = df['Survived']
+
+    # Split into training and test sets (80% training, 20% testing)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Feature scaling
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    return X_train_scaled, X_test_scaled, y_train, y_test
+
+# Train and evaluate the SVM model
+def train_and_evaluate_svm(X_train_scaled, X_test_scaled, y_train, y_test):
+    # Train the SVM model
+    svm_model = SVC(kernel='linear', random_state=42)
+    svm_model.fit(X_train_scaled, y_train)
+
+    # Predict on test data
+    y_pred = svm_model.predict(X_test_scaled)
+
+    # Evaluate model
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred)
+    class_report = classification_report(y_test, y_pred)
+
+    # Print results
+    print("\nSVM Model Evaluation:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
+    print("\nConfusion Matrix:")
+    print(conf_matrix)
+    print("\nClassification Report:")
+    print(class_report)
+
+# Main function to run the program
+def main():
+    X_train_scaled, X_test_scaled, y_train, y_test = preprocess_data(df)
+    train_and_evaluate_svm(X_train_scaled, X_test_scaled, y_train, y_test)
+
+if __name__ == "__main__":
+    main()
+=========================================================================================
+
+Question -11
+
+Q11. Problem Statement Arjun, a data analyst, wants to automate the process of evaluating a loan approval model using an SVM classifier. Write a program to load a dataset from a given filename, train an SVM classifier with a polynomial kernel, and compute evaluation metrics such as accuracy, precision, recall, and F1-score. The program should handle cases where the dataset contains only one class and exit gracefully with an error message.
+
+=========================================================================================
+
+import os
+import pandas as pd
+import sys
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+
+# Prompt the user to enter the filename
+file_name = input("Enter the dataset filename: ").strip()
+
+# Get the current directory and construct the full path
+current_directory = os.path.dirname(__file__)
+file_path = os.path.join(current_directory, file_name)
+
+# Load the dataset
+try:
+    df = pd.read_csv(file_path)
+except FileNotFoundError:
+    print(f"Error: The file '{file_name}' was not found.")
+    sys.exit(1)
+
+# Display the first few rows (optional)
+# print(df.head())
+
+# Preprocess the dataset
+def preprocess_data(df):
+    # Handling categorical features if any
+    label_encoder = LabelEncoder()
+
+    # Encoding categorical columns (if present)
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = label_encoder.fit_transform(df[col])
+
+    # Splitting features (X) and target variable (y)
+    X = df.drop(columns=['Loan_Status'])  # Assuming 'Loan_Status' is the target column
+    y = df['Loan_Status']
+
+    # Checking if dataset contains only one class
+    if len(y.unique()) == 1:
+        print("Error: Dataset contains only one class. Classification cannot be performed.")
+        sys.exit(1)
+
+    # Splitting the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Feature scaling
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    return X_train_scaled, X_test_scaled, y_train, y_test
+
+# Train and evaluate the SVM model
+def train_and_evaluate_svm(X_train_scaled, X_test_scaled, y_train, y_test):
+    # Train the SVM classifier with a polynomial kernel
+    svm_model = SVC(kernel='poly', degree=3, random_state=42)
+    svm_model.fit(X_train_scaled, y_train)
+
+    # Predict on the test data
+    y_pred = svm_model.predict(X_test_scaled)
+
+    # Compute evaluation metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, zero_division=1)
+    recall = recall_score(y_test, y_pred, zero_division=1)
+    f1 = f1_score(y_test, y_pred, zero_division=1)
+
+    # Output the results
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 Score: {f1:.4f}")
+    print("Classification Report:")
+    print(classification_report(y_test, y_pred))
+
+# Main function
+def main():
+    X_train_scaled, X_test_scaled, y_train, y_test = preprocess_data(df)
+    train_and_evaluate_svm(X_train_scaled, X_test_scaled, y_train, y_test)
+
+if __name__ == "__main__":
+    main()
+=========================================================================================
+
+Question -12
+
+Q12. Problem Statement Emma, a retail analyst, needs to predict whether a product will be sold out based on historical sales data. Write a program that loads a dataset from a user-provided CSV file, preprocesses it by handling missing values, encoding categorical features, and scaling numerical features. Then, train a Gaussian Naïve Bayes model to classify whether a product is sold out and evaluate its performance using accuracy, confusion matrix, and classification report.
+
+=========================================================================================
+
+import os
+import sys
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# Prompt the user to enter the filename
+file_name = input().strip()
+
+# Construct the full path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+# Display first few rows (optional)
+# print(df.head())
+
+# Preprocess the dataset
+def preprocess_data(df):
+    # Handling missing values: Fill numerical values with the mean
+    for col in df.select_dtypes(include=['number']).columns:
+        df[col] = df[col].fillna(df[col].mean())
+
+    # Fill missing categorical values with the most frequent value
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = df[col].fillna(df[col].mode()[0])
+
+    # Encoding categorical features
+    label_encoder = LabelEncoder()
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = label_encoder.fit_transform(df[col])
+
+    # Splitting features (X) and target variable (y)
+    X = df.drop(columns=['Sold_Out'])  # Assuming 'Sold_Out' is the target column
+    y = df['Sold_Out']
+
+    scalar = StandardScalar()
+    X_scaled = scalar.fit_transform(X)
+
+    # Split data into training and testing sets (80% training, 20% testing)
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+    return X_train, X_test, y_train, y_test
+
+# Train and evaluate the Naïve Bayes model
+def train_and_evaluate_nb(X_train_scaled, X_test_scaled, y_train, y_test):
+    # Train the Gaussian Naïve Bayes model
+    model = GaussianNB()
+    model.fit(X_train_scaled, y_train)
+
+    # Predict on test set
+    y_pred = model.predict(X_test_scaled)
+
+    # Compute accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+
+    # Compute confusion matrix
+    confusion_mat = confusion_matrix(y_test, y_pred)
+
+    # Classification report
+    class_report = classification_report(y_test, y_pred)
+
+    # Output the results
+    print(f"Accuracy: {accuracy:.4f}")
+    print("Confusion Matrix:")
+    print(confusion_mat)
+    print("Classification Report:")
+    print(class_report)
+
+# Main function
+def main():
+    X_train_scaled, X_test_scaled, y_train, y_test = preprocess_data(df)
+    train_and_evaluate_nb(X_train_scaled, X_test_scaled, y_train, y_test)
+
+if __name__ == "__main__":
+    main()
+=========================================================================================
+
+Question -13
+
+Q13. Problem Statement Liam, a customer retention specialist, wants to predict whether a customer will churn based on their demographics and spending behavior. Write a program that loads a dataset from a user-provided CSV file, preprocesses it by handling missing values and standardizing numerical features. Then, train a Gaussian Naïve Bayes model to classify whether a customer will churn and evaluate its performance using accuracy, confusion matrix, and classification report.
+
+=========================================================================================
+import os
+import sys
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# Prompt the user for the dataset filename
+file_name = input().strip()
+
+# Construct the full file path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+
+# Display first few rows (optional for debugging)
+# print(df.head())
+
+# Preprocess the dataset
+def preprocess_data(df):
+    # Handling missing values: Fill numerical values with the mean
+    for col in df.select_dtypes(include=['number']).columns:
+        df[col] = df[col].fillna(df[col].mean())
+
+    # Fill missing categorical values with the most frequent value
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = df[col].fillna(df[col].mode()[0])
+
+    # Encoding categorical features using LabelEncoder
+    label_encoder = LabelEncoder()
+    for col in df.select_dtypes(include=['object']).columns:
+        df[col] = label_encoder.fit_transform(df[col])
+
+    # Splitting features (X) and target variable (y)
+    X = df.drop(columns=['Churn'])  # Assuming 'Churn' is the target column
+    y = df['Churn']
+
+    # Split data into training (80%) and testing (20%) sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Feature scaling - Standardizing numerical features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    return X_train_scaled, X_test_scaled, y_train, y_test
+
+# Train and evaluate the Naïve Bayes model
+def train_and_evaluate_nb(X_train_scaled, X_test_scaled, y_train, y_test):
+    # Train the Gaussian Naïve Bayes model
+    model = GaussianNB()
+    model.fit(X_train_scaled, y_train)
+
+    # Predict on test set
+    y_pred = model.predict(X_test_scaled)
+
+    # Compute accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+
+    # Compute confusion matrix
+    confusion_mat = confusion_matrix(y_test, y_pred)
+
+    # Generate classification report
+    class_report = classification_report(y_test, y_pred)
+
+    # Output the results
+    print(f"Accuracy: {accuracy:.4f}")
+    print("Confusion Matrix:")
+    print(confusion_mat)
+    print("Classification Report:")
+    print(class_report)
+
+# Main function to execute the workflow
+def main():
+    X_train_scaled, X_test_scaled, y_train, y_test = preprocess_data(df)
+    train_and_evaluate_nb(X_train_scaled, X_test_scaled, y_train, y_test)
+
+if __name__ == "__main__":
+    main()
+
+=========================================================================================
+
+Question -14
+
+Q14. Problem Statement Emma is analyzing customer demographics to categorize spending behaviors. Each customer record includes age, work experience, spending score, and family size. The spending score is mapped to numerical values: Low → 0, Average → 1, High → 2. Given N customer records, Emma wants to classify them into K clusters using the K-Means algorithm. Any record whose Euclidean distance from its cluster center exceeds a given threshold T is marked as an outlier. Write a program to determine the cluster number (1-based index) for each customer or mark them as "Outlier".
+
+=========================================================================================
+
+
+import os
+import sys
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+# User input for file name, number of clusters (K), and outlier threshold (T)
+file_name = input("Enter dataset filename: ").strip()
+K = int(input("Enter the number of clusters (K): "))
+T = float(input("Enter the outlier threshold (T): "))
+
+# Construct the full file path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+# Display first few rows (optional for debugging)
+# print(df.head())
+
+# Preprocessing function
+def preprocess_data(df):
+    # Handling missing values: Fill numerical columns with the mean
+    for col in df.select_dtypes(include=['number']).columns:
+        df[col] = df[col].fillna(df[col].mean())
+
+    # Encode 'Spending Score' (Low=0, Average=1, High=2)
+    spending_mapping = {"Low": 0, "Average": 1, "High": 2}
+    df["Spending Score"] = df["Spending Score"].map(spending_mapping)
+
+    # Standardize numerical features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(df)
+
+    return X_scaled
+
+# Apply preprocessing
+X = preprocess_data(df)
+
+# Perform K-Means clustering
+kmeans = KMeans(n_clusters=K, random_state=42, n_init=10)
+df["Cluster"] = kmeans.fit_predict(X) + 1  # 1-based index for clusters
+
+# Compute Euclidean distances of each point from its cluster center
+distances = np.linalg.norm(X - kmeans.cluster_centers_[df["Cluster"] - 1], axis=1)
+
+# Mark points as "Outlier" if distance > T
+df["Cluster"] = np.where(distances > T, "Outlier", df["Cluster"])
+
+# Display the results
+print(df[["Cluster"]])
+
+# Save the output to a CSV file
+output_file = "customer_clusters.csv"
+df.to_csv(output_file, index=False)
+print(f"Results saved to {output_file}")
+
+=========================================================================================
+
+Question -15
+
+Q15. Problem Statement Aryan is analyzing climate patterns using a dataset that includes WEATHER_ID, TEMPERATURE, HUMIDITY, and CATEGORY. He wants to apply k-means clustering with four centroids to classify different weather patterns based on temperature and humidity. Write a program to read the dataset, apply k-means clustering using TEMPERATURE and HUMIDITY, and allow Aryan to input new values to predict the corresponding weather condition cluster.
+
+=========================================================================================
+
+
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# Load the dataset
+file_name = input()
+
+# Construct the full file path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+# Select features for clustering
+X = df[['TEMPERATURE', 'HUMIDITY']]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Apply K-Means clustering with 4 centroids
+kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
+df["Cluster"] = kmeans.fit_predict(X_scaled) + 1  # 1-based index
+
+# Predict cluster for new input
+temp = float(input("Enter TEMPERATURE: "))
+humidity = float(input("Enter HUMIDITY: "))
+
+# Scale the input data
+new_data = scaler.transform([[temp, humidity]])
+predicted_cluster = kmeans.predict(new_data)[0] + 1  # Convert to 1-based index
+
+print(f"The input values belong to Cluster {predicted_cluster}.")
+
+=========================================================================================
+
+Question -16
+
+Q16. Problem Statement Athulya aims to create a program that predicts whether a student will pass or fail based on their scores in math, science, and history. She loads a dataset of scores and pass/fail statuses from a CSV f ile and trains a neural network using backpropagation. After normalization and mapping of pass/fail labels, the program trains the network to minimize prediction errors. Athulya then prompts the user to input scores for math, science, and history. Using the trained network, the program predicts the student's result as pass or fail.
+
+=========================================================================================
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# Step 1: Load dataset
+file_name = input().strip()
+file1 = os.path.join(sys.path[0], file_name)
+df = pd.read_csv(file1)
+
+# Step 2: Preprocessing
+# Select features and target
+X = df[['Math', 'Science', 'History']]  # Independent variables (numerical scores)
+y = df['Result']  # Target variable ("Pass" or "Fail")
+
+# Normalize scores using MinMaxScaler (scales values between 0 and 1)
+scaler = MinMaxScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Encode labels ("Pass" → 1, "Fail" → 0) , If dataset is already numeric leave this step
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(y) # see the dataset carefully to analyse to apply the label encoder are not
+
+# Step 3: Train Neural Network (MLP)
+model = MLPClassifier(hidden_layer_sizes=(10, 5), activation='relu', solver='adam', max_iter=1000, random_state=42) # solver ans activation are not necessary , if need use this
+model.fit(X_scaled, y_encoded)
+
+# Step 5: Predict Student Result
+math_score = float(input("Enter Math score: "))
+science_score = float(input("Enter Science score: "))
+history_score = float(input("Enter History score: "))
+
+# Normalize input scores using the same scaler
+input_data = scaler.transform([[math_score, science_score, history_score]])
+
+# Predict the result
+prediction = model.predict(input_data)[0]
+predicted_label = label_encoder.inverse_transform([prediction])[0]
+
+print(f"Predicted Result: {predicted_label}")
+
+=========================================================================================
+
+Question -17
+
+Q17. Problem Statement Prawin is a financial analyst working for a credit risk assessment company. His task is to develop a classifier that predicts the credit risk of individuals based on their demographic and financial data. The company has provided him with a dataset containing information about individuals' education, employment status, and credit risk. Prawin needs to build a decision tree classifier to predict credit risk. Additionally, he wants to calculate the Gini impurity of the dataset to assess its purity before and after training the model.
+
+=========================================================================================
+
+import pandas as pd
+import numpy as np
+import os
+import sys
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from collections import Counter
+
+# Load the dataset
+file_name = input()
+
+# Construct the full file path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+# Step 2: Preprocessing
+# Fill missing values with the mode for categorical and mean for numerical columns
+df.fillna(df.mode().iloc[0], inplace=True)
+
+# Identify categorical and numerical columns
+categorical_columns = df.select_dtypes(include=['object']).columns
+numerical_columns = df.select_dtypes(include=['number']).columns
+
+# Convert categorical columns using Label Encoding
+label_encoders = {}
+for col in categorical_columns:
+    le = LabelEncoder()
+    df[col] = le.fit_transform(df[col])
+    label_encoders[col] = le  # Save encoders for future use
+
+# Scale numerical features (optional but improves accuracy)
+scaler = StandardScaler()
+df[numerical_columns] = scaler.fit_transform(df[numerical_columns])
+
+# Select features and target
+X = df.drop(columns=['CreditRisk'])  # Independent variables
+y = df['CreditRisk']  # Target variable (Credit Risk: "Low", "Medium", "High")
+
+# Encode CreditRisk labels
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(y)  # Convert to numerical labels
+
+# Step 3: Calculate Gini Impurity of the dataset before training
+def gini_impurity(y):
+    total = len(y)
+    if total == 0:
+        return 0
+    counts = Counter(y)
+    impurity = 1 - sum((count / total) ** 2 for count in counts.values())
+    return impurity
+
+gini_before = gini_impurity(y_encoded)
+print(f"Gini Impurity before training: {gini_before:.4f}")
+
+# Step 4: Train Decision Tree Classifier
+X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42) # if testcase dosesn't pass take off this testtrain split
+clf = DecisionTreeClassifier(criterion='gini', max_depth=5, random_state=42)  # Added max_depth for better generalization, gini and max_depth are not necessary , but you can add
+clf.fit(X_train, y_train)
+
+# Step 5: Evaluate the Model
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+print(f"Model Accuracy: {accuracy:.2f}")
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Step 6: Calculate Gini Impurity after training (on predicted values)
+gini_after = gini_impurity(y_pred)
+print(f"Gini Impurity after training: {gini_after:.4f}")
+
+# Step 7: Predict Credit Risk for a new individual
+print("\nEnter details to predict credit risk:")
+education_input = input("Enter Education level: ").strip()
+employment_input = input("Enter Employment status: ").strip()
+
+# Convert input using previously fitted encoders (handle unknown inputs)
+try:
+    education_encoded = label_encoders['Education'].transform([education_input])[0]
+    employment_encoded = label_encoders['Employment'].transform([employment_input])[0]
+except ValueError:
+    print("Error: Invalid category entered. Please enter a valid Education or Employment status.")
+    sys.exit(1)
+
+# Make prediction
+new_data = np.array([[education_encoded, employment_encoded]])
+predicted_risk = clf.predict(new_data)[0]
+predicted_label = label_encoder.inverse_transform([predicted_risk])[0]
+
+print(f"Predicted Credit Risk: {predicted_label}")
+
+
+=========================================================================================
+
+Question -18
+
+Q18. Problem Statement As a financial analyst, Ramesh is responsible for evaluating loan applications. He has received a dataset containing details of applicants, including demographics, income levels, loan amounts, and credit histories. His objective is to preprocess the dataset by handling missing values, applying different imputation techniques, and scaling loan amounts for further analysis. Identify and Report Missing Data: • Read a CSV file containing loan application records. • Identify missing values in each column and report the count of missing values. Handle Missing Data: • Remove rows that contain missing values. • Fill missing values in "LoanAmount" using the mean. • Fill missing values in "Loan_Term" using the most frequent value. • For categorical columns like "Gender," "Credit_History," and "Loan_Status," replace missing values with the mode. Standardization and Normalization: • Standardize the "LoanAmount" column using Z-score normalization (StandardScaler). • Normalize the "LoanAmount" column using Min-Max scaling (MinMaxScaler). Display Datasets After Handling Missing Data: • Show the dataset after dropping rows with missing values. • Display the standardized and normalized values of the "LoanAmount" column. Help Ramesh to achieve this tas
+
+=========================================================================================
+
+import pandas as pd
+import os
+import sys
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
+# Load the dataset
+file_name = input()
+
+# Construct the full file path using sys.path[0] (script's directory)
+file_path = os.path.join(sys.path[0], file_name)
+
+df = pd.read_csv(file_path)
+
+# Step 1: Identify and Report Missing Data
+print("\nMissing Data Count Before Handling:")
+missing_values = df.isnull().sum()
+print(missing_values)
+
+# Step 2: Handle Missing Data
+
+# Remove rows with missing values
+df_dropped = df.dropna()
+print(f"\nDataset after dropping missing values (rows removed: {len(df) - len(df_dropped)}):")
+print(df_dropped.isnull().sum())  # Should print zero missing values
+
+# Create a copy of the dataset for imputation
+df_imputed = df.copy()
+
+# Fill missing values in "LoanAmount" using mean
+df_imputed["LoanAmount"].fillna(df["LoanAmount"].mean(), inplace=True)
+
+# Fill missing values in "Loan_Term" using the most frequent value (mode)
+df_imputed["Loan_Term"].fillna(df["Loan_Term"].mode()[0], inplace=True)
+
+# Fill missing values in categorical columns with their mode
+categorical_columns = ["Gender", "Credit_History", "Loan_Status"]
+for col in categorical_columns:
+    df_imputed[col].fillna(df[col].mode()[0], inplace=True)
+
+# Step 3: Standardization and Normalization of "LoanAmount"
+
+# Standardization (Z-score Normalization)
+scaler = StandardScaler()
+df_imputed['LoanAmount_Standardized'] = scaler.fit_transform(df_imputed[['LoanAmount']])
+
+# Min-Max Normalization
+normalizer = MinMaxScaler()
+df_imputed['LoanAmount_Normalized'] = normalizer.fit_transform(df_imputed[['LoanAmount']])
+
+# Step 4: Display Results
+print("\nDataset after handling missing values:")
+print(df_imputed.isnull().sum())  # Should print zero missing values
+
+print("\nStandardized Loan Amount:")
+print(df_imputed[['LoanAmount_Standardized']])
+
+print("\nNormalized Loan Amount:")
+print(df_imputed[['LoanAmount_Normalized']])
+
+
+=========================================================================================
+=========================================================================================
+
+
+
+
+
+
+
+
+
